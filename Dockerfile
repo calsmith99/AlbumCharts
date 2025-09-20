@@ -12,7 +12,7 @@ RUN npm run build
 
 FROM php:8.2-fpm-alpine
 WORKDIR /var/www/html
-RUN apk add --no-cache bash icu-dev libzip-dev zlib-dev oniguruma-dev mariadb-connector-c-dev sqlite
+RUN apk add --no-cache bash icu-dev libzip-dev zlib-dev oniguruma-dev mariadb-connector-c-dev sqlite sqlite-dev g++ make autoconf
 # Install PHP extensions
 RUN docker-php-ext-install intl pdo pdo_mysql pdo_sqlite zip mbstring
 # Copy backend code
