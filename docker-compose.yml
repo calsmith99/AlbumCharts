@@ -15,8 +15,7 @@ services:
       - ./database:/var/www/html/database
     ports:
       - "9000:9000"
-    depends_on:
-      - web
+    # No depends_on here; web depends on app
   web:
     image: nginx:alpine
     container_name: albumcharts_web
