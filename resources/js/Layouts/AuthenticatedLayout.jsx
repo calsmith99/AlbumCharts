@@ -30,6 +30,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    href="/album-timeline"
+                                    active={window.location.pathname === '/album-timeline'}
+                                >
+                                    Album Timeline
+                                </NavLink>
                             </div>
                         </div>
 

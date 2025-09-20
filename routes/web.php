@@ -48,6 +48,13 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // Album Timeline page
+    Route::get('/album-timeline', function () {
+        return Inertia::render('AlbumTimeline');
+    })->name('album-timeline');
+    // API: Paginated full album listens
+    Route::get('/api/full-album-listens', [\App\Http\Controllers\AlbumTimelineController::class, 'paginatedFullListens'])
+        ->name('api.fullAlbumListens');
     // Track listens for album
     Route::get('/albums/{album}/track-listens', [\App\Http\Controllers\TrackListenController::class, 'recentForAlbum'])
         ->name('albums.trackListens');

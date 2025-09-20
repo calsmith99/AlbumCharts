@@ -90,13 +90,13 @@ class LastFmDataService
                         // --- FULL ALBUM LISTEN LOGIC ---
                         $albumInfo = $this->lastFmService->getAlbumInfo($artist->name, $album->name, $user->lastfm_username);
                         $playCount = (int) $albumData['playcount'];
-                        $listenedInFull = false;
 
-                        // Only process track logic if 'tracks' key exists
+                        $fullAlbumSessions = [];
+                        $earliestTrackListen = null;
                         if (isset($albumInfo['album']['tracks']) && isset($albumInfo['album']['tracks']['track'])) {
                             $trackCount = count($albumInfo['album']['tracks']['track']);
-
-                            // Save track listens for this album from recent tracks
+                            // Group track listens by session (e.g., by day)
+                            $trackListensByDay = [];
                             foreach ($recentTrackList as $track) {
                                 if (!isset($track['date']['uts'])) continue;
                                 if (
@@ -105,6 +105,12 @@ class LastFmDataService
                                 ) {
                                     $trackName = $track['name'];
                                     $listenedAt = Carbon::createFromTimestamp($track['date']['uts']);
+                                    if (!$earliestTrackListen || $listenedAt->lt($earliestTrackListen)) {
+                                        $earliestTrackListen = $listenedAt;
+                                    }
+                                    $dayKey = $listenedAt->format('Y-m-d');
+                                    if (!isset($trackListensByDay[$dayKey])) $trackListensByDay[$dayKey] = [];
+                                    $trackListensByDay[$dayKey][$trackName] = $listenedAt;
                                     \App\Models\TrackListen::updateOrCreate(
                                         [
                                             'user_id' => $user->id,
@@ -119,59 +125,52 @@ class LastFmDataService
                                     );
                                 }
                             }
-
-                            // Build a set of played tracks for this album from recent tracks in the past week
-                            $trackPlays = [];
-                            foreach ($recentTrackList as $track) {
-                                if (!isset($track['date']['uts'])) continue;
-                                if (
-                                    isset($track['artist']['#text']) && strtolower($track['artist']['#text']) === strtolower($artist->name) &&
-                                    isset($track['album']['#text']) && strtolower($track['album']['#text']) === strtolower($album->name)
-                                ) {
-                                    $trackName = $track['name'];
-                                    $trackPlays[$trackName] = true;
+                            // For each day, check if all tracks were played
+                            foreach ($trackListensByDay as $day => $trackPlays) {
+                                $allTracksPlayed = true;
+                                foreach ($albumInfo['album']['tracks']['track'] as $track) {
+                                    if (!isset($trackPlays[$track['name']])) {
+                                        $allTracksPlayed = false;
+                                        break;
+                                    }
+                                }
+                                if ($allTracksPlayed && $trackCount > 0) {
+                                    $fullAlbumSessions[] = [
+                                        'date' => $day,
+                                        'first_listen' => min($trackPlays),
+                                    ];
                                 }
                             }
-                            \Log::info('Checking listen history for album', [
-                                'album_id' => $album->id,
-                                'album_name' => $album->name,
-                                'track_names' => array_map(fn($t) => $t['name'], $albumInfo['album']['tracks']['track']),
-                                'trackPlays' => array_keys($trackPlays),
-                            ]);
-                            // Check if every album track was played at least once
-                            $allTracksPlayed = true;
-                            foreach ($albumInfo['album']['tracks']['track'] as $track) {
-                                if (!isset($trackPlays[$track['name']])) {
-                                    $allTracksPlayed = false;
-                                    break;
-                                }
-                            }
-                            if ($allTracksPlayed && $trackCount > 0 && $playCount >= $trackCount) {
-                                $listenedInFull = true;
-                                // ...existing code...
-                            }
-                        } else {
-                            $trackCount = 0;
                         }
 
+                        // Only add one ChartEntry per album per chart (top listen)
+                        $topSession = null;
+                        if (count($fullAlbumSessions) > 0) {
+                            // Use the earliest full listen in the week
+                            usort($fullAlbumSessions, function($a, $b) {
+                                return strtotime($a['first_listen']) - strtotime($b['first_listen']);
+                            });
+                            $topSession = $fullAlbumSessions[0];
+                        }
                         \Log::info('Chart entry created', [
                             'chart_id' => $chart->id,
                             'album_id' => $album->id,
                             'album_name' => $album->name,
                             'position' => $position,
                             'play_count' => $playCount,
-                            'completed_album' => $listenedInFull,
+                            'completed_album' => !!$topSession,
                             'streak_count' => $streakCount,
+                            'created_at' => $earliestTrackListen ? $earliestTrackListen : ($topSession ? $topSession['first_listen'] : $now),
                         ]);
-
-                        ChartEntry::create([
+                        ChartEntry::forceCreate([
                             'chart_id' => $chart->id,
                             'album_id' => $album->id,
                             'position' => $position,
                             'play_count' => $playCount,
-                            'format' => 'streaming', // Default, can be updated later
-                            'completed_album' => $listenedInFull,
+                            'format' => 'streaming',
+                            'completed_album' => !!$topSession,
                             'streak_count' => $streakCount,
+                            'created_at' => $earliestTrackListen ? $earliestTrackListen : ($topSession ? $topSession['first_listen'] : $now),
                         ]);
 
                         $position++;
@@ -195,12 +194,6 @@ class LastFmDataService
             ]);
             DB::commit();
             return $chart;
-                            \Log::info('Checking listen history for album', [
-                                'album_id' => $album->id,
-                                'album_name' => $album->name,
-                                'track_names' => array_map(fn($t) => $t['name'], $albumInfo['album']['tracks']['track']),
-                                'trackPlays' => array_keys($trackPlays),
-                            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
