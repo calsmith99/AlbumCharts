@@ -12,8 +12,7 @@ RUN npm run build
 
 FROM php:8.2-fpm-alpine
 WORKDIR /var/www/html
-# Install system dependencies
-RUN apk add --no-cache bash icu-dev libzip-dev zlib-dev oniguruma-dev sqlite
+RUN apk add --no-cache bash icu-dev libzip-dev zlib-dev oniguruma-dev mariadb-connector-c-dev sqlite
 # Install PHP extensions
 RUN docker-php-ext-install intl pdo pdo_mysql pdo_sqlite zip mbstring
 # Copy backend code
