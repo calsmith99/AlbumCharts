@@ -18,7 +18,7 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "9000:9000"
+      - "9009:9000"
     depends_on:
       - db
   web:
