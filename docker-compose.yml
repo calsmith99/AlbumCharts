@@ -2,7 +2,6 @@ version: '3.8'
 services:
   app:
     build: .
-    image: albumcharts:latest
     container_name: albumcharts_app
     restart: unless-stopped
     command: ["/bin/sh", "-c", "chmod +x /var/www/html/wait-for-db.sh && /var/www/html/wait-for-db.sh db php artisan migrate --force && php-fpm"]
