@@ -8,10 +8,7 @@ COPY public/ public/
 COPY vite.config.js ./
 RUN npm run build
 
-FROM composer:2.7 AS composer-deps
-WORKDIR /app
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader
+
 
 FROM php:8.2-fpm-alpine
 WORKDIR /var/www/html
@@ -20,7 +17,7 @@ RUN apk add --no-cache bash icu-dev libzip-dev zlib-dev oniguruma-dev sqlite
 # Install PHP extensions
 RUN docker-php-ext-install intl pdo pdo_mysql pdo_sqlite zip mbstring
 # Copy backend code
-COPY --from=composer-deps /app /var/www/html
+COPY composer.json composer.lock ./
 COPY app/ app/
 COPY bootstrap/ bootstrap/
 COPY config/ config/
@@ -30,6 +27,9 @@ COPY storage/ storage/
 COPY artisan ./
 COPY phpunit.xml ./
 COPY .env.example .env
+# Install composer dependencies in final image
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN composer install --no-dev --optimize-autoloader --verbose
 # Copy built frontend
 COPY --from=frontend-build /app/public /var/www/html/public
 # Set permissions
