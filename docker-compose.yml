@@ -10,13 +10,13 @@ services:
       - ./wait-for-db.sh:/var/www/html/wait-for-db.sh
       - ./storage:/var/www/html/storage
     environment:
-      APP_ENV: production
-      DB_CONNECTION: mariadb
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_DATABASE: db
-      DB_USERNAME: db
-      DB_PASSWORD: db
+      APP_ENV: ${APP_ENV}
+      DB_CONNECTION: ${DB_CONNECTION}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     ports:
       - "9000:9000"
     depends_on:
@@ -37,10 +37,10 @@ services:
     container_name: albumcharts_db
     restart: unless-stopped
     environment:
-        MYSQL_ROOT_PASSWORD: root
-        MYSQL_DATABASE: albumcharts
-        MYSQL_USER: albumcharts
-        MYSQL_PASSWORD: albumcharts
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
     ports:
