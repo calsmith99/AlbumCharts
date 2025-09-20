@@ -35,4 +35,4 @@ COPY --from=frontend-build /app/public /var/www/html/public
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 # Expose port
 EXPOSE 9000
-CMD ["php-fpm"]
+CMD ["/bin/sh", "-c", "php artisan migrate --force && php-fpm"]
