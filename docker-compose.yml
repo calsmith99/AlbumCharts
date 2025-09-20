@@ -5,7 +5,9 @@ services:
     image: albumcharts:latest
     container_name: albumcharts_app
     restart: unless-stopped
-  command: /bin/sh -c "php artisan migrate --force && php-fpm"
+    command: ["/bin/sh", "-c", "chmod +x /var/www/html/wait-for-db.sh && /var/www/html/wait-for-db.sh db php artisan migrate --force && php-fpm"]
+    volumes:
+      - ./wait-for-db.sh:/var/www/html/wait-for-db.sh
   environment:
       - APP_ENV=production
       - DB_CONNECTION=mariadb
