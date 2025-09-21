@@ -60,6 +60,25 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's latest chart (convenience relation)
+     */
+    public function latestChart()
+    {
+        // latestOfMany ensures we get the most recent related Chart per user
+        return $this->hasOne(Chart::class)->latestOfMany('week_start_date');
+    }
+
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class, 'group_user')->withTimestamps();
+    }
+
+    public function ownedGroups()
+    {
+        return $this->hasMany(Group::class, 'owner_id');
+    }
+
+    /**
      * Get the user's listening sessions
      */
     // ...existing code...

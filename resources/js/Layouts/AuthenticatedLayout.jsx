@@ -31,6 +31,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Dashboard
                                 </NavLink>
                                 <NavLink
+                                    href={route('groups.index')}
+                                    active={route().current('groups.index')}
+                                >
+                                    Groups
+                                </NavLink>
+                                <NavLink
                                     href="/album-timeline"
                                     active={window.location.pathname === '/album-timeline'}
                                 >
@@ -139,6 +145,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             active={route().current('dashboard')}
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('groups.index')}
+                            active={route().current('groups.index')}
+                        >
+                            Groups
                         </ResponsiveNavLink>
                     </div>
 

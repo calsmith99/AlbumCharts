@@ -3,7 +3,7 @@ import { useState } from 'react';
 import AlbumTile from './AlbumTile';
 import TrackTimelineModal from './TrackTimelineModal';
 
-export default function ChartGrid({ chart }) {
+export default function ChartGrid({ chart, gridSize = 5 }) {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalAlbum, setModalAlbum] = useState(null);
     const [modalTracks, setModalTracks] = useState([]);
@@ -30,21 +30,29 @@ export default function ChartGrid({ chart }) {
             });
     };
 
+    // Ensure we always render gridSize*gridSize tiles. Fill missing entries with null placeholders.
+    const total = gridSize * gridSize;
+    const entries = Array.from({ length: total }).map((_, i) => chart.chart_entries[i] || null);
+
     return (
-        <div className="mt-8 mx-auto max-w-4xl">
+        <div className="mt-8 mx-auto max-w-6xl">
             <h2 className="text-2xl font-bold mb-4 text-center">
                 {chart.chart_type} Chart - Week of {new Date(chart.week_start_date).toLocaleDateString()}
             </h2>
-            <div className="grid grid-cols-5 grid-rows-5 gap-2 aspect-square">
-                {chart.chart_entries.map((entry) => (
-                    <div key={entry.id} onClick={() => handleAlbumClick(entry)} className="cursor-pointer">
-                        <AlbumTile
-                            album={entry.album.name}
-                            artist={entry.album.artist.name}
-                            imageUrl={entry.album.image_url || 'https://via.placeholder.com/300x300?text=No+Art'}
-                            completed={entry.completed_album}
-                        />
-                    </div>
+            <div className={`grid gap-2 aspect-square`} style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0,1fr))`, gridTemplateRows: `repeat(${gridSize}, minmax(0,1fr))` }}>
+                {entries.map((entry, idx) => (
+                    entry ? (
+                        <div key={entry.id} onClick={() => handleAlbumClick(entry)} className="cursor-pointer">
+                            <AlbumTile
+                                album={entry.album.name}
+                                artist={entry.album.artist.name}
+                                imageUrl={entry.album.image_url || 'https://via.placeholder.com/300x300?text=No+Art'}
+                                completed={entry.completed_album}
+                            />
+                        </div>
+                    ) : (
+                        <div key={`empty-${idx}`} className="h-32 w-32 bg-gray-200 rounded border" />
+                    )
                 ))}
             </div>
             <TrackTimelineModal

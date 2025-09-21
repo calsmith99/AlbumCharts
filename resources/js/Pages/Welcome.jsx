@@ -80,8 +80,8 @@ export default function Welcome({ auth, chart }) {
                                 </div>
                             </div>
                         </div>
-                        {/* Full Chart Render */}
-                        <ChartGrid chart={chart} />
+                        {/* Full Chart Render - only show to guests */}
+                        {!auth.user && chart ? <ChartGrid chart={chart} /> : null}
                     </div>
                 </main>
             </div>

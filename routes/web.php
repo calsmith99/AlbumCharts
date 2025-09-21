@@ -7,10 +7,18 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    $chart = \App\Models\Chart::with(['chartEntries.album.artist'])
-        ->latest()
-        ->first();
+    $user = auth()->user();
+
+    $chart = null;
+    // Only show the most recent chart to guests (not logged in users)
+    if (!$user) {
+        $chart = \App\Models\Chart::with(['chartEntries.album.artist'])
+            ->latest()
+            ->first();
+    }
+
     return Inertia::render('Welcome', [
+        'auth' => ['user' => $user],
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
@@ -48,6 +56,16 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // Groups
+    Route::post('/groups', [\App\Http\Controllers\GroupController::class, 'store'])->name('groups.store');
+    Route::get('/groups', [\App\Http\Controllers\GroupController::class, 'index'])->name('groups.index');
+    Route::get('/groups/{group}', [\App\Http\Controllers\GroupController::class, 'show'])->name('groups.show');
+    Route::get('/groups/{group}/grid', [\App\Http\Controllers\GroupController::class, 'grid'])->name('groups.grid');
+
+    // Invite links
+    Route::post('/groups/{group}/invites', [\App\Http\Controllers\GroupInviteController::class, 'create'])->name('groups.invites.create');
+    Route::get('/invites/{token}/accept', [\App\Http\Controllers\GroupInviteController::class, 'accept'])->name('groups.invites.accept');
+
     // Album Timeline page
     Route::get('/album-timeline', function () {
         return Inertia::render('AlbumTimeline');
@@ -80,3 +98,25 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+// Dev/debug route: view members' latest charts and the aggregated chart for group 1
+if (app()->environment('local')) {
+    Route::get('/debug/group-charts/{groupId}', function ($groupId) {
+        $group = \App\Models\Group::with('users')->findOrFail($groupId);
+    // ensure we load real User models by id (avoid pivot/id confusion)
+    $userIds = $group->users()->pluck('id')->toArray();
+        $members = \App\Models\User::whereIn('id', $userIds)->with(['latestChart.chartEntries.album.artist'])->get();
+
+        // reuse the GroupController grid logic by resolving the controller
+        $controller = app(\App\Http\Controllers\GroupController::class);
+        $gridResp = $controller->grid($group);
+        $gridPayload = $gridResp->getData(true);
+
+        return Inertia::render('Debug/GroupCharts', [
+            'group' => $group,
+            'members' => $members,
+            'aggregated' => $gridPayload['aggregated_chart'] ?? null,
+            'grid' => $gridPayload['grid'] ?? null,
+        ]);
+    });
+}
