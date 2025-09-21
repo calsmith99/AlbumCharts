@@ -35,18 +35,29 @@ services:
     ports:
       - "3306:3306"
 
+  nginx-init:
+    image: alpine:3.18
+    container_name: albumcharts_nginx_init
+    restart: 'no'
+    volumes:
+      - ./nginx/conf.d:/src:ro
+      - nginx_conf:/target
+    command: ["/bin/sh", "-c", "cp -a /src/. /target/ || true; chmod -R 644 /target || true"]
   web:
     image: nginx:1.25
     container_name: albumcharts_web
     restart: unless-stopped
     ports:
-      - "8044:80"
+      - "8080:80"
     volumes:
-      # - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx_conf:/etc/nginx/conf.d:ro
       - ./public:/var/www/html/public:ro
       - ./storage:/var/www/html/storage
     depends_on:
       - app
+      - nginx-init
+    command: ["/bin/sh", "-c", "while [ ! -f /etc/nginx/conf.d/default.conf ]; do sleep 0.5; done; nginx -g 'daemon off;'"]
 
 volumes:
   db_data:
+  nginx_conf:
