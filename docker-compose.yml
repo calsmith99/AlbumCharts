@@ -7,6 +7,7 @@ services:
     command: ["php-fpm"]
     volumes:
       - ./storage:/var/www/html/storage
+      - ./public:/var/www/html/public
     environment:
       APP_ENV: ${APP_ENV}
       DB_CONNECTION: ${DB_CONNECTION}
@@ -41,11 +42,12 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./storage:/var/www/html/storage
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./public:/var/www/html/public
+      - ./storage:/var/www/html/storage
     depends_on:
       - app
 
 volumes:
   db_data:
+version: '3.8'
