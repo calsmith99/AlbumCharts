@@ -1,0 +1,10 @@
+FROM nginx:1.25
+WORKDIR /tmp
+
+# Copy nginx config directory into image so /etc/nginx/conf.d/default.conf exists even if host mounts fail
+COPY ./nginx/conf.d /etc/nginx/conf.d
+
+# Keep default public folder as a backup; a runtime bind-mount can still override it
+COPY ./public /var/www/html/public
+
+CMD ["nginx", "-g", "daemon off;"]
